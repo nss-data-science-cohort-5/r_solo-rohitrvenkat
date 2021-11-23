@@ -1,16 +1,20 @@
 ---
-title: "Tidyverse Solo Exercise"
+title: "**Tidyverse Solo Exercise**"
+author: "Rohit Venkat"
 output:
   html_document:
+    theme: cosmo
+    code_folding: hide
     df_print: paged
 ---
 
 ```{r include=FALSE}
-knitr::opts_chunk$set(rows.print = 20)
+knitr::opts_chunk$set(rows.print = 15)
 ```
 
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
+library(scales)
 library(corrr)
 library(readxl)
 ```
@@ -28,294 +32,491 @@ You'll be working with data on each of 145 school districts and the State of Ten
 
 Create an RMarkdown file to answer the following questions.
 
+\
 
-##### 1. Read in `districts.csv` into a tibble named `districts`. How many rows and columns does it contain?
+**1. Read in `districts.csv` into a tibble named `districts`. How many rows and columns does it contain?**
 
 ```{r}
+# Read in csv as tibble
 districts <- read_csv("../data/districts.csv", show_col_types = F)
 ```
 
-##### 2. Notice that the first row corresponds to the whole State of Tennessee. Remove this row and save the result back to `districts`.
+The `districts` tibble contains `r nrow(districts)` rows and `r ncol(districts)` columns.
+
+\
+
+**2. Notice that the first row corresponds to the whole State of Tennessee. Remove this row and save the result back to `districts`.**
 
 ```{r}
+# Remove 'State of Tennessee' row
 districts <- districts %>% 
   filter(system_name != "State of Tennessee")
 ```
 
-##### 3. How many districts have a proficiency rate of at least 80% for both alg_1 and eng_1?
+\
+
+**3. How many districts have a proficiency rate of at least 80% for both alg_1 and eng_1?**
 
 ```{r}
-districts %>%
+# Filter districts by Algebra I and English I proficiency
+(q3 <- districts %>%
   filter(alg_1 >= 80, eng_1 >= 80) %>%
-  select(system_name, alg_1, eng_1)
+  select(system_name, alg_1, eng_1))
 ```
 
-##### 4. How many districts have a proficiency rate less than 50% for either alg_1 or eng_1?
+`r nrow(q3)` districts have a proficiency rate of at least 80% for both Algebra I and English I.
+
+\
+
+**4. How many districts have a proficiency rate less than 50% for either alg_1 or eng_1?**
 
 ```{r}
-districts %>%
+# Filter districts by Algebra I or English I proficiency
+(q4 <- districts %>%
   filter(alg_1 < 50 | eng_1 < 50) %>%
-  select(system_name, alg_1, eng_1)
+  select(system_name, alg_1, eng_1))
 ```
 
-##### 5. Which district has the lowest graduation rate?
+`r nrow(q4)` districts have a proficiency rate less than 50% for either Algebra I or English I.
+
+\
+
+**5. Which district has the lowest graduation rate?**
 
 ```{r}
-districts %>%
+# Get district with lowest graduation rate
+(q5 <- districts %>%
   slice_min(grad) %>%
-  select(system_name, grad)
+  select(system_name, grad))
 ```
 
-##### 6. Which district has the highest dropout rate?
+`r q5$system_name` has the lowest graduation rate at `r q5$grad`%.
+
+\
+
+**6. Which district has the highest dropout rate?**
 
 ```{r}
-districts %>%
+# Get district with highest dropout rate
+(q6 <- districts %>%
   slice_max(dropout) %>%
-  select(system_name, dropout)
+  select(system_name, dropout))
 ```
 
-##### 7. Within the Mid Cumberland region, which district has the highest ACT composite?
+`r q6$system_name` has the highest dropout rate at `r q6$dropout`%.
+
+\
+
+**7. Within the Mid Cumberland region, which district has the highest ACT composite?**
 
 ```{r}
-districts %>%
+# Get Mid Cumberland region district with highest ACT composite score
+(q7 <- districts %>%
   filter(region == "Mid Cumberland") %>%
   slice_max(act_composite) %>%
-  select(system_name, act_composite)
+  select(system_name, act_composite))
 ```
 
-##### 8. Create a histogram showing the distribution of graduation rates. What can you say about this distribution?
+`r q7$system_name` has the highest ACT composite score within the Mid Cumberland region with `r q7$act_composite`.
+
+\
+
+**8. Create a histogram showing the distribution of graduation rates. What can you say about this distribution?**
 
 ```{r message=FALSE, warning=FALSE}
+# Create histogram showing distribution of graduation rates and mean
 districts %>%
   ggplot(aes(x = grad)) +
   geom_histogram(color = "#333333", fill = "lightsteelblue4") +
   geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
-  labs(x = "Graduation Rate", y = "Districts") +
+  geom_vline(aes(xintercept = mean(grad, na.rm = T)), size = 1.5, color = "orangered") +
   scale_x_continuous(breaks = seq(0, 100, by = 20)) +
   scale_y_continuous(limits = c(0, 30.6), expand = c(0, 0)) +
+  labs(
+    title = "Distribution of Graduation Rates",
+    x = "Graduation Rate",
+    y = "Districts") +
   theme_minimal()
 ```
 
+Graduation rates are roughly normally distributed around 90%, with a handful of outliers far below the average.
 
-##### 9. Create a scatter plot to compare alg_1 proficiency rates to alg_2 rates. What do you notice? Facet this plot by region. Does anything stand out when you facet the plots?
+\
+
+**9. Create a scatter plot to compare alg_1 proficiency rates to alg_2 rates. What do you notice? Facet this plot by region. Does anything stand out when you facet the plots?**
 
 ```{r warning=FALSE}
+# Create scatterplot showing Algebra I vs. Algebra II proficiency rates
 districts %>%
   ggplot(aes(x = alg_1, y = alg_2)) + 
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_hline(yintercept = -2.25, size = 1.5, color = "#333333") +
   geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
-  labs(x = "Algebra I Proficiency Rate", y = "Algebra II Proficiency Rate") +
+  geom_hline(yintercept = -2.25, size = 1.5, color = "#333333") +
   scale_x_continuous(breaks = seq(0, 100, by = 20), limits = c(-1.5, 102), expand = c(0, 0)) +
   scale_y_continuous(breaks = seq(0, 100, by = 20), limits = c(-2.25, 102), expand = c(0, 0)) +
+  labs(
+    title = "Algebra I vs. Algebra II Proficiency Rates",
+    x = "Algebra I Proficiency Rate",
+    y = "Algebra II Proficiency Rate") +
   theme_minimal()
 ```
+
+Algebra I and Algebra II proficiency rates are positively correlated with each other.
+
+\
+
 ```{r warning=FALSE}
+# Create scatterplot facet showing Algebra I vs. Algebra II proficiency rates by region
 districts %>%
   ggplot(aes(x = alg_1, y = alg_2)) + 
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_hline(yintercept = -2.25, size = 1, color = "#333333") +
   geom_vline(xintercept = -1.5, size = 1, color = "#333333") +
-  labs(x = "Algebra I Proficiency Rate", y = "Algebra II Proficiency Rate") +
-  scale_x_continuous(breaks = seq(0, 100, by = 20), limits = c(-1.5, 102), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(0, 100, by = 20), limits = c(-2.25, 102), expand = c(0, 0)) +
+  geom_hline(yintercept = -2.25, size = 1, color = "#333333") +
+  scale_x_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-1.5, 102),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-2.25, 102),
+    expand = c(0, 0)) +
+  labs(
+    title = "Algebra I vs. Algebra II Proficiency Rates by Region",
+    x = "Algebra I Proficiency Rate",
+    y = "Algebra II Proficiency Rate") +
   facet_wrap(~ region) +
   theme_minimal()
 ```
 
-##### 10. Create a bar chart showing the total enrollment by region. Which region has the highest total enrollment? Which has the smallest?
+The positive correlation between Algebra I and Algebra II proficiency rates holds for some regions better than others. Some regions exhibit wider dispersion of proficiency rates across districts, while the district proficiency rates for other regions are clustered closer together. Overall, regional differences in proficiency rates are evident from these plots, with some regions performing better than others.
+
+\
+
+**10. Create a bar chart showing the total enrollment by region. Which region has the highest total enrollment? Which has the smallest?**
 
 ```{r warning=FALSE}
-districts %>%
+# Sum up district enrollments by region
+q10 <- districts %>%
   group_by(region) %>%
-  summarize(enrollment = sum(enrollment, na.rm = T)) %>%
-  ggplot(aes(x = region, y = enrollment)) + 
+  summarize(enrollment = sum(enrollment, na.rm = T))
+
+# Create bar plot showing total enrollment by region
+q10 %>%
+  ggplot(aes(x = reorder(region, -enrollment), y = enrollment)) + 
   geom_col(color = "#333333", fill = "lightsteelblue4") +
   geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
-  labs(title = "Total Enrollment by Region", x = "", y = " Total Enrollment") +
-  scale_y_continuous(labels = scales::comma, limits = c(0, 306000), expand = c(0, 0)) +
+  scale_y_continuous(
+    labels = comma,
+    limits = c(0, 306000),
+    expand = c(0, 0)) +
+  labs(
+    title = "Total Enrollment by Region",
+    x = "",
+    y = " Total Enrollment") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-##### 11. When creating this bar chart you may have noticed that some districts have missing enrollment values. For how many districts is this the case?
+The `r q10$region[which.max(q10$enrollment)]` region has the largest total enrollment with `r comma(max(q10$enrollment))` students, while the `r q10$region[which.min(q10$enrollment)]` region has the smallest total enrollment with `r comma(min(q10$enrollment))` students. 
+
+\
+
+**11. When creating this bar chart you may have noticed that some districts have missing enrollment values. For how many districts is this the case?**
 
 ```{r}
-districts %>%
-  filter(is.na(enrollment)) %>%
-  nrow()
+# Get districts with missing enrollment values
+(q11 <- districts %>%
+  filter(is.na(enrollment))) %>%
+  select(system_name, enrollment)
 ```
 
-##### 12. What is the mean graduation rate across all districts? What might be wrong with using just the regular mean to assess average graduation rates?
+`r nrow(q11)` districts have missing enrollment values.
+
+\
+
+**12. What is the mean graduation rate across all districts? What might be wrong with using just the regular mean to assess average graduation rates?**
 
 ```{r}
-districts %>%
+# Calculate arithmetic mean graduation rate across all districts
+q12 <- districts %>%
   summarize(grad = mean(grad, na.rm = T)) %>%
   pull(grad)
 ```
 
-##### 13. Redo the previous question but use a weighted average (`weighted.mean`) graduation across all districts, weighing by enrollment. How much does this change your answer? Can you explain using the data the reason for the big change from using the mean?
+The mean graduation rate across all districts is `r round(q12, 1)`%. The problem with using the arithmetic mean to assess average graduation rates is that it equally weights all districts regardless of the number of students in each district.
+
+\
+
+**13. Redo the previous question but use a weighted average (`weighted.mean`) graduation across all districts, weighing by enrollment. How much does this change your answer? Can you explain using the data the reason for the big change from using the mean?**
 
 ```{r}
-districts %>%
+# Calculate weighted mean graduation rate across all districts
+q13 <- districts %>%
   filter(!is.na(enrollment)) %>%
   summarize(grad = weighted.mean(x = grad, w = enrollment, na.rm = T)) %>%
   pull(grad)
 ```
 
-##### 14. Create a boxplot showing enrollment rates per region. Does anything stand out?
-
-```{r message=FALSE, warning=FALSE}
-districts %>%
-  ggplot(aes(x = region, y = enrollment)) + 
-  geom_boxplot(color = "#333333", fill = "lightsteelblue4") +
-  geom_hline(yintercept = 0, size = 1.5, color="#333333") +
-  labs(title = "Enrollment Rates by Region", x = "", y = "Enrollment") +
-  scale_y_continuous(breaks = seq(0, 120000, by = 20000), labels = scales::comma, limits = c(0, 122400), expand = c(0, 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-```
-
-##### 15. Create a boxplot showing graduation rates per region. Does anything stand out?
+The weighted mean graduation rate across all districts is `r round(q13, 1)`%, which is `r round(q12 - q13, 1)` percentage points less than the arithmetic mean. This suggests that larger districts, on average, tend to have lower graduation rates than smaller districts.
 
 ```{r warning=FALSE}
+# Create scatterplot showing enrollment vs. graduation rates
 districts %>%
-  ggplot(aes(x = region, y = grad)) + 
-  geom_boxplot(color = "#333333", fill = "lightsteelblue4") +
-  geom_hline(yintercept = 0, size = 1.5, color="#333333") +
-  labs(title = "Graduation Rates by Region", x = "", y = "Graduation Rate") +
-  scale_y_continuous(breaks = seq(0, 100, by = 20), limits = c(0, 102), expand = c(0, 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
+  ggplot(aes(x = grad, y = enrollment)) +
+  geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
+  geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -2500, size = 1.5, color = "#333333") +
+  scale_x_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-1.5, 102),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    labels = comma, 
+    breaks = seq(0, 100000, by = 20000),
+    limits = c(-2500, 122400),
+    expand = c(0, 0)) +
+  labs(
+    title = "Enrollment vs. Graduation Rate",
+    x = "Graduation Rate",
+    y = "Enrollment") +
+  theme_minimal()
 ```
 
-##### 16. Find the weighted average of graduation rates by region using enrollment as weights. Compare the results you get for the weighted average to what you see from the boxplots. Can you explain any discrepancy?
+Plotting enrollment vs. graduation rate shows that the districts with the four largest enrollment rates (`r paste(round(range(districts %>% slice_max(enrollment, n = 4) %>% pull(enrollment) / mean(districts$enrollment, na.rm = T)), digits = 1), collapse = "-")` times higher than the average district) have substandard graduation rates (`r paste(round(range(districts %>% slice_max(enrollment, n = 4) %>% pull(grad)), digits = 1), collapse = "-")`%). Districts such as these contribute heavily to the lower weighted average. 
 
-```{r}
-districts %>%
-  group_by(region) %>%
-  filter(!is.na(enrollment)) %>%
-  summarize(grad = weighted.mean(x = grad, w = enrollment, na.rm = T))
-```
+\
 
-##### 17. For many districts, values for `alg_2` are lower than for `alg_1`. Create a histogram showing the distribution of differences (`alg_1` - `alg_2`). Which school had the largest drop from `alg_1` to `alg_2`? For what percentage of schools is it true that `alg_2` is larger than `alg_1`? Is there a similar dropoff for `eng_2` and `eng_3`?
+**14. Create a boxplot showing enrollment rates per region. Does anything stand out?**
 
 ```{r message=FALSE, warning=FALSE}
+# Create boxplot showing enrollment rates per region
+districts %>%
+  ggplot(aes(x = reorder(region, -enrollment, median, na.rm = T), y = enrollment)) + 
+  geom_boxplot(color = "#333333", fill = "lightsteelblue4") +
+  geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
+  scale_y_continuous(
+    breaks = seq(0, 120000, by = 20000), 
+    labels = comma, 
+    limits = c(0, 122400), 
+    expand = c(0, 0)) +
+  labs(title = "Enrollment Rates by Region",
+       x = "", 
+       y = "Enrollment") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The Mid Cumberland region has the largest median enrollment, while the Northwest region has the smallest. Compared to other regions, the Mid Cumberland region exhibits a significantly wider range of enrollment rates across districts. The districts with the four largest enrollment rates are located in the Southwest/Memphis, Mid Cumberland, East TN, and Southeast regions, respectively.
+
+\
+
+**15. Create a boxplot showing graduation rates per region. Does anything stand out?**
+
+```{r warning=FALSE}
+# Create boxplot showing graduation rates per region
+districts %>%
+  ggplot(aes(x = reorder(region, -grad, median, na.rm = T), y = grad)) + 
+  geom_boxplot(color = "#333333", fill = "lightsteelblue4") +
+  geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
+  scale_y_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(0, 102),
+    expand = c(0, 0)) +
+  labs(
+    title = "Graduation Rates by Region",
+    x = "",
+    y = "Graduation Rate") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The Northwest region has the highest median graduation rate, while the Southeast region has the lowest. The districts with the four lowest graduation rates are located in the Mid Cumberland (2), Southwest/Memphis, and Northwest regions, respectively.
+
+\
+
+**16. Find the weighted average of graduation rates by region using enrollment as weights. Compare the results you get for the weighted average to what you see from the boxplots. Can you explain any discrepancy?**
+
+```{r}
+# Calculate weighted average of graduation rates by region
+(q16 <- districts %>%
+  group_by(region) %>%
+  filter(!is.na(enrollment)) %>%
+  summarize(grad = weighted.mean(x = grad, w = enrollment, na.rm = T)))
+```
+
+\
+
+**17. For many districts, values for `alg_2` are lower than for `alg_1`. Create a histogram showing the distribution of differences (`alg_1` - `alg_2`). Which school had the largest drop from `alg_1` to `alg_2`? For what percentage of schools is it true that `alg_2` is larger than `alg_1`? Is there a similar dropoff for `eng_2` and `eng_3`?**
+
+```{r message=FALSE, warning=FALSE}
+# Create histogram showing distribution of difference in Algebra I vs. Algebra II proficiency rates
 districts %>%
   summarize(alg_diff = alg_1 - alg_2) %>%
   ggplot(aes(x = alg_diff)) +
   geom_histogram(color = "#333333", fill = "lightsteelblue4") +
   geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
-  labs(x = "Difference in Algebra I and Algebra II Proficiency Rates", y = "Districts") +
-  scale_x_continuous(limits = c(-25, 65), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(0, 12, by = 4), limits = c(0, 12.24), expand = c(0, 0)) +
+  scale_x_continuous(
+    limits = c(-25, 65),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 12, by = 4),
+    limits = c(0, 12.24),
+    expand = c(0, 0)) +
+  labs(
+    x = "Difference in Algebra I and Algebra II Proficiency Rates",
+    y = "Districts") +
   theme_minimal()
 ```
 
-##### 18. You may have noticed that a lot of rows are missing values. Which district has the largest number of missing values? What do you notice about schools that have a lot of missing values?
+\
+
+**18. You may have noticed that a lot of rows are missing values. Which district has the largest number of missing values? What do you notice about schools that have a lot of missing values?**
 
 ```{r}
-districts %>%
+(q18 <- districts %>%
   mutate(na_count = rowSums(is.na(.))) %>%
-  slice_max(na_count, n = 2)
+  slice_max(na_count, n = 2))
 ```
 
-##### 19. Find the correlation between graduation rate and all other variables. Create a horizontal bar chart showing these correlations. Make sure that your plot is ordered by correlation values. What do you notice from these correlations?
+\
+
+**19. Find the correlation between graduation rate and all other variables. Create a horizontal bar chart showing these correlations. Make sure that your plot is ordered by correlation values. What do you notice from these correlations?**
 
 ```{r message=FALSE, warning=FALSE}
+# Create bar plot showing correlation between graduation rate and all other variables
 districts %>% 
   select(where(is.numeric)) %>% 
   correlate() %>%
   focus(grad) %>%
-  mutate(term = fct_reorder(term, grad)) %>%
-  ggplot(aes(x = term, y = grad)) + 
+  mutate(term = fct_reorder(term, -grad)) %>%
+  ggplot(aes(y = term, x = grad)) + 
   geom_col(color = "#333333", fill = "lightsteelblue4") +
-  geom_hline(yintercept = 0, size = 0.75, color = "#333333") +
-  labs(title = "Correlations with Graduation Rate", x = "", y = "Pearson Correlation") +
-  scale_y_continuous(
+  geom_vline(xintercept = 0, size = 0.75, color = "#333333") +
+  scale_x_continuous(
     breaks = seq(-0.6, 0.6, by = 0.2), 
-    labels = scales::comma, 
+    labels = comma, 
     limits = c(-0.65, 0.65), 
     expand = c(0, 0)) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust=1))
-
-```
-
-##### 20. Create a scatterplot for `grad` vs. `suspended`. Does what you see make sense given your answer from the previous part?
-
-```{r message=FALSE, warning=FALSE}
-districts %>%
-  ggplot(aes(x = grad, y = suspended)) +
-  geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_hline(yintercept = -0.5, size = 1.5, color = "#333333") +
-  geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
-  labs(title = "Graduation vs. Suspension Rates by School", x = "Graduation Rate", y = "Suspension Rate") +
-  scale_x_continuous(breaks = seq(0, 100, by = 20), limits = c(-1.5, 102), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(0, 25, by = 5), limits = c(-0.5, 25.5), expand = c(0, 0)) +
+  labs(
+    title = "Correlations with Graduation Rate",
+    x = "Pearson Correlation",
+    y = "") +
   theme_minimal()
 ```
 
-##### 21. Create a linear regression model using `lm` with target variable `grad` and predictor variable `suspended`. What R^2 value does this model have? What is the interpretation of this number?
+\
+
+**20. Create a scatterplot for `grad` vs. `suspended`. Does what you see make sense given your answer from the previous part?**
+
+```{r message=FALSE, warning=FALSE}
+# Create scatterplot showing graduation vs. suspension rates
+districts %>%
+  ggplot(aes(x = grad, y = suspended)) +
+  geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
+  geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -0.55, size = 1.5, color = "#333333") +
+  scale_x_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-1.5, 102),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 25, by = 5),
+    limits = c(-0.55, 25.5),
+    expand = c(0, 0)) +
+  labs(
+    title = "Graduation vs. Suspension Rates by School",
+    x = "Graduation Rate",
+    y = "Suspension Rate") +
+  theme_minimal()
+```
+
+\
+
+**21. Create a linear regression model using `lm` with target variable `grad` and predictor variable `suspended`. What R^2 value does this model have? What is the interpretation of this number?**
 
 ```{r}
-grad_suspended_model <- lm(grad ~ suspended , data = districts)
-summary(grad_suspended_model)$adj.r.squared
+# Build linear regression model of grad vs. suspended
+q21 <- lm(grad ~ suspended, data = districts)
+summary(q21)$adj.r.squared
 ```
 
-##### 22. Add the regression line to your scatterplot using `geom_smooth` with `method='lm'`. How do you feel about the regression line after seeing it plotted on the scatterplot?
+\
+
+**22. Add the regression line to your scatterplot using `geom_smooth` with `method='lm'`. How do you feel about the regression line after seeing it plotted on the scatterplot?**
 
 ```{r message=FALSE, warning=FALSE}
+# Create scatterplot showing graduation vs. suspension rates with fitted regression line
 districts %>%
   ggplot(aes(x = grad, y = suspended)) +
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_smooth(method = 'lm', formula = y ~ x, color = "red") +
-  geom_hline(yintercept = -0.5, size = 1.5, color = "#333333") +
+  geom_smooth(method = 'lm', level = 0.95, formula = y ~ x, color = "red") +
   geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
-  labs(title = "Graduation vs. Suspension Rates by School", x = "Graduation Rate", y = "Suspension Rate") +
-  scale_x_continuous(breaks = seq(0, 100, by = 20), limits = c(-1.5, 102), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(0, 25, by = 5), limits = c(-0.5, 25.5), expand = c(0, 0)) +
+  geom_hline(yintercept = -0.55, size = 1.5, color = "#333333") +
+  scale_x_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-1.5, 102),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 25, by = 5),
+    limits = c(-0.55, 25.5),
+    expand = c(0, 0)) +
+  labs(
+    title = "Graduation vs. Suspension Rates by School",
+    x = "Graduation Rate",
+    y = "Suspension Rate") +
   theme_minimal()
 ```
+
+\
 
 **Continued Exploration and Practice**
 
-##### 23. Read in the school-level testing data for 2014, available [here](https://www.tn.gov/content/dam/tn/education/data/data_2014_school_base.xlsx). You might find the readxl library useful for this task. If you use this library, be sure to look at the `na` argument for the `read_excel` function.
+**23. Read in the school-level testing data for 2014, available [here](https://www.tn.gov/content/dam/tn/education/data/data_2014_school_base.xlsx). You might find the readxl library useful for this task. If you use this library, be sure to look at the `na` argument for the `read_excel` function.**
 
 ```{r}
-testing <- read_excel("../data/data_2014_school_base.xlsx", na = c("*", "**"))
+# Read in excel spreadsheet as tibble
+schools <- read_excel("../data/data_2014_school_base.xlsx", na = c("*", "**"))
 ```
 
-##### 24. How many schools have at least 20 percent of students below bsc for Algebra I? Which districts do these schools belong to?
+\
+
+**24. How many schools have at least 20 percent of students below bsc for Algebra I? Which districts do these schools belong to?**
 
 ```{r}
-testing %>%
+# Filter schools by pct_below_bsc for Algebra I
+schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
   filter(subject == "Algebra I", pct_below_bsc >= 20) %>%
   select(system_name, school_name, subject, pct_below_bsc)
 ```
 
-##### 25. How many schools have at least 20 percent of students below bsc for _both_ Algebra I and English I?
+\
+
+**25. How many schools have at least 20 percent of students below bsc for _both_ Algebra I and English I?**
 
 ```{r}
-alg_1 <- testing %>%
+# Filter schools by pct_below_bsc for Algebra I
+alg_1 <- schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
   filter(subject == "Algebra I",  pct_below_bsc >= 20) %>%
   select(system_name, school_name, alg_1_pct_below_bsc = pct_below_bsc)
 
-eng_1 <- testing %>%
+# Filter schools by pct_below_bsc for English I
+eng_1 <- schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
   filter(subject == "English I", pct_below_bsc >= 20) %>%
   select(system_name, school_name, eng_1_pct_below_bsc = pct_below_bsc)
 
-inner_join(alg_1, eng_1, by = c("system_name", "school_name"))
+(q25 <- inner_join(alg_1, eng_1, by = c("system_name", "school_name")))
 ```
 
-##### 26. Which grade has the highest pct_adv for Algebra I? Plot the average pct_adv per grade level as a bar chart. Make sure that the bars are ordered by grade level.
+\
+
+**26. Which grade has the highest pct_adv for Algebra I? Plot the average pct_adv per grade level as a bar chart. Make sure that the bars are ordered by grade level.**
 
 ```{r message=FALSE, warning=FALSE}
-testing %>%
+# Create bar plot showing average pct_adv for Algebra I by grade
+schools %>%
   group_by(grade) %>%
   filter(grade != "All Grades", subgroup == "All Students") %>%
   filter(subject == "Algebra I", !is.na(pct_adv)) %>%
@@ -323,25 +524,28 @@ testing %>%
   ggplot(aes(x = as.numeric(grade), y = pct_adv)) +
   geom_col(color = "#333333", fill = "lightsteelblue4") +
   geom_hline(yintercept = 0, size = 1.5, color = "#333333") +
-  labs(title = "Algebra I Advanced Percentage by Grade Level", x = "Grade", y = "Percentage") +
-  scale_y_continuous(breaks = seq(0, 40, by = 5), limits = c(0, 40.8), expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 40, by = 10),
+    limits = c(0, 40.8),
+    expand = c(0, 0)) +
+  labs(
+    title = "Algebra I Advanced Percentage by Grade Level",
+    x = "Grade",
+    y = "Percentage") +
   theme_minimal()
 ```
 
-##### 27. Find the correlation between pct_adv for Algebra I and pct_adv for Algebra II by school. Create a scatterplot showing Algebra II scores vs. Algebra I scores by school.
+\
+
+**27. Find the correlation between pct_adv for Algebra I and pct_adv for Algebra II by school. Create a scatterplot showing Algebra II scores vs. Algebra I scores by school.**
 
 ```{r message=FALSE, warning=FALSE}
-alg_1 <- testing %>%
+alg_pct_adv <- schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
-  filter(subject == "Algebra I") %>%
-  select(system_name, school_name, alg_1_pct_adv = pct_adv)
-
-alg_2 <- testing %>%
-  filter(grade == "All Grades", subgroup == "All Students") %>%
-  filter(subject == "Algebra II") %>%
-  select(system_name, school_name, alg_2_pct_adv = pct_adv)
-  
-alg_pct_adv <- inner_join(alg_1, alg_2, by = c("system_name", "school_name"))
+  filter(subject %in% c("Algebra I", "Algebra II")) %>%
+  select(system_name, school_name, subject, pct_adv) %>%
+  pivot_wider(names_from = subject, values_from = pct_adv) %>%
+  rename(alg_1_pct_adv = 'Algebra I', alg_2_pct_adv = 'Algebra II')
 
 alg_pct_adv %>%
   select(alg_1_pct_adv, alg_2_pct_adv) %>%
@@ -352,40 +556,108 @@ alg_pct_adv %>%
 alg_pct_adv %>%
   ggplot(aes(x = alg_1_pct_adv, y = alg_2_pct_adv)) + 
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_hline(yintercept = -2.25, size = 1.5, color = "#333333") +
   geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -2.25, size = 1.5, color = "#333333") +
+  scale_x_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-1.5, 102),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-2.25, 102),
+    expand = c(0, 0)) +
   labs(
-    title = "Algebra I vs. II Advanced Percentages by School", 
+    title = "Algebra I vs. Algebra II Advanced Percentages by School", 
     x = "Algebra I Advanced Percentage", 
     y = "Algebra II Advanced Percentage") +
-  scale_x_continuous(breaks = seq(0, 100, by = 20), limits = c(-1.5, 102), expand = c(0, 0)) +
-  scale_y_continuous(breaks = seq(0, 100, by = 20), limits = c(-2.25, 102), expand = c(0, 0)) +
   theme_minimal()
 ```
 
-##### 28. Find all schools in Rutherford County that have "High School" in their name. For these schools, create a chart (your choice) showing the differences in pct_below_bsc, pct_bsc, pct_prof, and pct_adv for Algebra I when looking across all subgroups and grades.
+\
 
-```{r}
+**28. Find all schools in Rutherford County that have "High School" in their name. For these schools, create a chart (your choice) showing the differences in pct_below_bsc, pct_bsc, pct_prof, and pct_adv for Algebra I when looking across all subgroups and grades.**
 
+```{r message=FALSE, warning=FALSE}
+schools %>%
+  filter(grade == "All Grades", subgroup == "All Students") %>%
+  filter(system_name == "Rutherford County") %>%
+  filter(grepl("High School", school_name)) %>%
+  filter(subject == "Algebra I") %>%
+  select(school_name, pct_below_bsc, pct_bsc, pct_prof, pct_adv) %>%
+  pivot_longer(!school_name) %>%
+  mutate(name = fct_relevel(name, "pct_below_bsc", "pct_bsc", "pct_prof", "pct_adv")) %>%
+  ggplot(aes(x = name, y = value)) +
+  geom_boxplot(color = "#333333", fill = "lightsteelblue4") +
+  geom_hline(yintercept = 0, size = 1.5, color="#333333") +
+  scale_y_continuous(
+    breaks = seq(0, 50, by = 10),
+    limits = c(0, 51),
+    expand = c(0, 0)) +
+  labs(
+    title = "Algebra I Proficiency Breakdown for Rutherford County High Schools",
+    x = "",
+    y = "Percentage") +
+  theme_minimal()
 ```
 
-##### 29. I claim that smaller schools do a better job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is greater than 95. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look?
+\
+
+**29. I claim that smaller schools do a better job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is greater than 95. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look?**
 
 ```{r}
+alg_1_pct_prof_adv <- schools %>%
+  filter(grade == "All Grades", subgroup == "All Students") %>%
+  filter(subject == "Algebra I") %>%
+  transmute(valid_tests, pct_prof_adv_above_95 = pct_prof_adv > 95)
 
+t.test(valid_tests ~ pct_prof_adv_above_95, alg_1_pct_prof_adv, alternative = "greater")
 ```
 
-##### 30. I also claim that smaller schools do a worse job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is less than 25. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look now?
+\
+
+**30. I also claim that smaller schools do a worse job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is less than 25. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look now?**
 
 ```{r}
+alg_1_pct_prof_adv <- schools %>%
+  filter(grade == "All Grades", subgroup == "All Students") %>%
+  filter(subject == "Algebra I") %>%
+  transmute(valid_tests, pct_prof_adv_below_25 = pct_prof_adv < 25)
 
+t.test(valid_tests ~ pct_prof_adv_below_25, alg_1_pct_prof_adv, alternative = "greater")
 ```
 
-##### 31. Create a scatterplot showing pct_prov_adv vs. valid_tests. Can you use this to explain the result for numbers 26 and 27?
+\
 
-```{r}
+**31. Create a scatterplot showing pct_prov_adv vs. valid_tests. Can you use this to explain the result for numbers 26 and 27?**
 
+```{r message=FALSE, warning=FALSE}
+schools %>%
+  filter(grade == "All Grades", subgroup == "All Students") %>%
+  filter(subject == "Algebra I") %>%
+  mutate(pct_filter = ifelse(pct_prof_adv > 95, "> 95%", ifelse(pct_prof_adv < 25, "< 25%", "Other"))) %>%
+  ggplot(aes(x = valid_tests, y = pct_prof_adv, fill = pct_filter)) +
+  geom_point(color = "#333333", pch = 21, size = 2) +
+  geom_vline(xintercept = -11, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -2.25, size = 1.5, color = "#333333") +
+  scale_x_continuous(
+    limits = c(-11, 620),
+    expand = c(0, 0)) +
+  scale_y_continuous(
+    breaks = seq(0, 100, by = 20),
+    limits = c(-2.25, 102),
+    expand = c(0, 0)) +
+  scale_fill_manual(
+    breaks = c("> 95%", "< 25%", "Other"),
+    values = c("cornflowerblue", "tan2", "lightsteelblue4")) +
+  labs(
+    title = "Algebra I Proficient/Advanced Percentage vs. Valid Tests", 
+    x = "Valid Tests", 
+    y = "Algebra I Proficient/Advanced Percentage") +
+  theme_minimal() +
+  theme(legend.title = element_blank())
 ```
+
+\
 
 If you finish all of the above questions, continue to explore the two datasets and see what else interesting you can find.
 
