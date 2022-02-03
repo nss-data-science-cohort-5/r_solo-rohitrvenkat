@@ -411,22 +411,22 @@ districts %>%
 ```{r message=FALSE, warning=FALSE}
 # Create scatterplot showing graduation vs. suspension rates
 districts %>%
-  ggplot(aes(x = grad, y = suspended)) +
+  ggplot(aes(x = suspended, y = grad)) +
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
-  geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
-  geom_hline(yintercept = -0.55, size = 1.5, color = "#333333") +
+  geom_vline(xintercept = -0.35, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -2.5, size = 1.5, color = "#333333") +
   scale_x_continuous(
-    breaks = seq(0, 100, by = 20),
-    limits = c(-1.5, 102),
+    breaks = seq(0, 25, by = 5),
+    limits = c(-0.35, 25.5),
     expand = c(0, 0)) +
   scale_y_continuous(
-    breaks = seq(0, 25, by = 5),
-    limits = c(-0.55, 25.5),
+    breaks = seq(0, 100, by = 20),
+    limits = c(-2.5, 102),
     expand = c(0, 0)) +
   labs(
     title = "Graduation vs. Suspension Rates by School",
-    x = "Graduation Rate",
-    y = "Suspension Rate") +
+    x = "Suspension Rate",
+    y = "Graduation Rate") +
   theme_minimal()
 ```
 
@@ -447,23 +447,23 @@ summary(q21)$adj.r.squared
 ```{r message=FALSE, warning=FALSE}
 # Create scatterplot showing graduation vs. suspension rates with fitted regression line
 districts %>%
-  ggplot(aes(x = grad, y = suspended)) +
+  ggplot(aes(x = suspended, y = grad)) +
   geom_point(color = "#333333", fill = "lightsteelblue4", pch = 21, size = 2) +
   geom_smooth(method = 'lm', level = 0.95, formula = y ~ x, color = "red") +
-  geom_vline(xintercept = -1.5, size = 1.5, color = "#333333") +
-  geom_hline(yintercept = -0.55, size = 1.5, color = "#333333") +
+  geom_vline(xintercept = -0.35, size = 1.5, color = "#333333") +
+  geom_hline(yintercept = -2.5, size = 1.5, color = "#333333") +
   scale_x_continuous(
-    breaks = seq(0, 100, by = 20),
-    limits = c(-1.5, 102),
+    breaks = seq(0, 25, by = 5),
+    limits = c(-0.35, 25.5),
     expand = c(0, 0)) +
   scale_y_continuous(
-    breaks = seq(0, 25, by = 5),
-    limits = c(-0.55, 25.5),
+    breaks = seq(0, 100, by = 20),
+    limits = c(-2.5, 102),
     expand = c(0, 0)) +
   labs(
     title = "Graduation vs. Suspension Rates by School",
-    x = "Graduation Rate",
-    y = "Suspension Rate") +
+    x = "Suspension Rate",
+    y = "Graduation Rate") +
   theme_minimal()
 ```
 
@@ -605,12 +605,12 @@ schools %>%
 **29. I claim that smaller schools do a better job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is greater than 95. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look?**
 
 ```{r}
-alg_1_pct_prof_adv <- schools %>%
+q29 <- schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
   filter(subject == "Algebra I") %>%
   transmute(valid_tests, pct_prof_adv_above_95 = pct_prof_adv > 95)
 
-t.test(valid_tests ~ pct_prof_adv_above_95, alg_1_pct_prof_adv, alternative = "greater")
+t.test(valid_tests ~ pct_prof_adv_above_95, q29, alternative = "greater")
 ```
 
 \
@@ -618,12 +618,12 @@ t.test(valid_tests ~ pct_prof_adv_above_95, alg_1_pct_prof_adv, alternative = "g
 **30. I also claim that smaller schools do a worse job preparing students for Algebra I standardized tests. Find the average number of valid tests (a proxy for the school size) for schools where the pct_prof_adv for Algebra I is less than 25. Compare this to the average number of valid tests for all schools. In light of this result, how does my claim look now?**
 
 ```{r}
-alg_1_pct_prof_adv <- schools %>%
+q30 <- schools %>%
   filter(grade == "All Grades", subgroup == "All Students") %>%
   filter(subject == "Algebra I") %>%
   transmute(valid_tests, pct_prof_adv_below_25 = pct_prof_adv < 25)
 
-t.test(valid_tests ~ pct_prof_adv_below_25, alg_1_pct_prof_adv, alternative = "greater")
+t.test(valid_tests ~ pct_prof_adv_below_25, q30, alternative = "greater")
 ```
 
 \
